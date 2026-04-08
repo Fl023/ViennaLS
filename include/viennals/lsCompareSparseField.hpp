@@ -241,6 +241,7 @@ public:
     std::vector<std::array<unsigned, 1>> vertexIndices;
     std::vector<T> differenceValues;
     std::vector<T> squaredDifferenceValues;
+    std::vector<T> signedDifferenceValues;
 
     // Prepare mesh output if needed
     const bool generateMesh = outputMesh != nullptr;
@@ -260,6 +261,7 @@ public:
       vertexIndices.reserve(levelSetIterated->getNumberOfPoints());
       differenceValues.reserve(levelSetIterated->getNumberOfPoints());
       squaredDifferenceValues.reserve(levelSetIterated->getNumberOfPoints());
+      signedDifferenceValues.reserve(levelSetIterated->getNumberOfPoints());
     }
 
     // Prepare for point data filling if needed
@@ -326,7 +328,8 @@ public:
       }
 
       // Calculate difference and add to sum
-      T diff = std::abs(valueExpanded - valueIterated) * gridDelta;
+      T signedDiff = (valueExpanded - valueIterated) * gridDelta;
+      T diff = std::abs(signedDiff);
       T diffSquared = diff * diff;
       sumDifferences += diff;
       sumSquaredDifferences += diffSquared;
@@ -341,9 +344,10 @@ public:
         // Store the coordinates
         nodeCoordinates.push_back(coords);
 
-        // Store the difference value (squared and absolute)
+        // Store the difference value (squared, absolute, and signed)
         differenceValues.push_back(diff);
         squaredDifferenceValues.push_back(diffSquared);
+        signedDifferenceValues.push_back(signedDiff);
 
         // Create a vertex for this point
         std::array<unsigned, 1> vertex = {
@@ -380,6 +384,9 @@ public:
                                                  "Absolute differences");
       outputMesh->pointData.insertNextScalarData(
           std::move(squaredDifferenceValues), "Squared differences");
+
+      outputMesh->pointData.insertNextScalarData(
+          std::move(signedDifferenceValues), "Signed differences");
     }
 
     if (fillIteratedWithDistances) {
